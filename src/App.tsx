@@ -226,9 +226,7 @@ function App() {
         <div className="watch-content">
           <section className="player-section">
             <div className="video-player">
-              <div className="video-screen">
-                <div className="video-timestamp">12:43 / 24:16</div>
-              </div>
+              <div className="video-screen" />
               {hotkeysVisible && (
                 <div className="hotkey-overlay">
                   <h3>Keyboard shortcuts</h3>
