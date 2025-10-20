@@ -157,7 +157,6 @@ function App() {
   }, [])
 
   const hideHotkeyHints = useCallback(() => {
-    setAlwaysShowHotkeys(false)
     setTransientHotkeysVisible(false)
     if (transientTimerRef.current) {
       window.clearTimeout(transientTimerRef.current)
@@ -215,7 +214,9 @@ function App() {
       if (isSpace) {
         event.preventDefault()
         handlePlayPause()
-        hideHotkeyHints()
+        if (!alwaysShowHotkeys) {
+          hideHotkeyHints()
+        }
         return
       }
 
@@ -231,13 +232,15 @@ function App() {
 
       if (isOtherHotkey) {
         event.preventDefault()
-        hideHotkeyHints()
+        if (!alwaysShowHotkeys) {
+          hideHotkeyHints()
+        }
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [hotkeyHintsVisible, hideHotkeyHints, handlePlayPause])
+  }, [hotkeyHintsVisible, hideHotkeyHints, handlePlayPause, alwaysShowHotkeys])
 
   return (
     <div className="app-shell">
