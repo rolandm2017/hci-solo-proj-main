@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 
 type SuggestedVideo = {
@@ -118,6 +118,7 @@ function App() {
   const [alwaysShowHotkeys, setAlwaysShowHotkeys] = useState(false)
   const [isHotkeyModalOpen, setIsHotkeyModalOpen] = useState(false)
   const [transientHotkeysVisible, setTransientHotkeysVisible] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(false)
 
   const settingsMenuRef = useRef<HTMLDivElement | null>(null)
   const settingsButtonRef = useRef<HTMLButtonElement | null>(null)
@@ -155,7 +156,20 @@ function App() {
     }
   }, [])
 
-  const hotkeysVisible = alwaysShowHotkeys || transientHotkeysVisible
+  const hideHotkeyHints = useCallback(() => {
+    setAlwaysShowHotkeys(false)
+    setTransientHotkeysVisible(false)
+    if (transientTimerRef.current) {
+      window.clearTimeout(transientTimerRef.current)
+      transientTimerRef.current = null
+    }
+  }, [])
+
+  const hotkeyHintsVisible = alwaysShowHotkeys || transientHotkeysVisible
+
+  const handlePlayPause = useCallback(() => {
+    setIsPlaying((value) => !value)
+  }, [])
 
   const handleShowHotkeysBriefly = () => {
     setTransientHotkeysVisible(true)
@@ -164,6 +178,7 @@ function App() {
     }
     transientTimerRef.current = window.setTimeout(() => {
       setTransientHotkeysVisible(false)
+      transientTimerRef.current = null
     }, 3500)
   }
 
@@ -181,6 +196,48 @@ function App() {
       hotkeyCheatSheet.slice(midpoint),
     ]
   }, [])
+
+  useEffect(() => {
+    if (!hotkeyHintsVisible) {
+      return
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const normalizedKey = event.key.toLowerCase()
+      const normalizedCode = event.code.toLowerCase()
+
+      const isSpace =
+        normalizedKey === ' ' ||
+        normalizedKey === 'space' ||
+        normalizedKey === 'spacebar' ||
+        normalizedCode === 'space'
+
+      if (isSpace) {
+        event.preventDefault()
+        handlePlayPause()
+        hideHotkeyHints()
+        return
+      }
+
+      const isOtherHotkey =
+        normalizedKey === 'c' ||
+        normalizedKey === 't' ||
+        normalizedKey === 'arrowup' ||
+        normalizedKey === 'arrowdown' ||
+        normalizedCode === 'keyc' ||
+        normalizedCode === 'keyt' ||
+        normalizedCode === 'arrowup' ||
+        normalizedCode === 'arrowdown'
+
+      if (isOtherHotkey) {
+        event.preventDefault()
+        hideHotkeyHints()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [hotkeyHintsVisible, hideHotkeyHints, handlePlayPause])
 
   return (
     <div className="app-shell">
@@ -227,32 +284,44 @@ function App() {
           <section className="player-section">
             <div className="video-player">
               <div className="video-screen" />
-              {hotkeysVisible && (
-                <div className="hotkey-overlay">
-                  <h3>Keyboard shortcuts</h3>
-                  <div className="hotkey-overlay__grid">
-                    {hotkeyCheatSheet.map((hotkey) => (
-                      <div key={hotkey.key} className="hotkey-overlay__item">
-                        <span className="hotkey-overlay__key">{hotkey.key}</span>
-                        <span className="hotkey-overlay__action">
-                          {hotkey.action}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
               <div className="player-controls">
                 <div className="player-controls__start">
-                  <button className="icon-button" aria-label="Play">
-                    <span className="icon icon--play" />
-                  </button>
+                  <div className="control-button">
+                    <button
+                      className="icon-button"
+                      aria-label={isPlaying ? 'Pause' : 'Play'}
+                      onClick={handlePlayPause}
+                    >
+                      <span
+                        className={`icon ${isPlaying ? 'icon--pause' : 'icon--play'}`}
+                      />
+                    </button>
+                    {hotkeyHintsVisible && (
+                      <span className="control-hotkey">Space</span>
+                    )}
+                  </div>
                   <button className="icon-button" aria-label="Rewind">
                     <span className="icon icon--rewind" />
                   </button>
                   <button className="icon-button" aria-label="Fast forward">
                     <span className="icon icon--forward" />
                   </button>
+                  <div className="volume-control">
+                    <div className="control-button">
+                      <button className="icon-button" aria-label="Volume">
+                        <span className="icon icon--volume" />
+                      </button>
+                      {hotkeyHintsVisible && (
+                        <span className="control-hotkey">
+                          <span>Up</span>
+                          <span>Down</span>
+                        </span>
+                      )}
+                    </div>
+                    <div className="volume-bar">
+                      <div className="volume-bar__value" style={{ width: '68%' }} />
+                    </div>
+                  </div>
                   <div className="timecode">12:43 / 24:16</div>
                 </div>
                 <div className="player-controls__center">
@@ -262,9 +331,14 @@ function App() {
                   </div>
                 </div>
                 <div className="player-controls__end">
-                  <button className="icon-button small" aria-label="Captions">
-                    CC
-                  </button>
+                  <div className="control-button">
+                    <button className="icon-button small" aria-label="Captions">
+                      CC
+                    </button>
+                    {hotkeyHintsVisible && (
+                      <span className="control-hotkey">C</span>
+                    )}
+                  </div>
                   <button className="icon-button small" aria-label="Mini player">
                     <span className="icon icon--mini" />
                   </button>
@@ -276,9 +350,14 @@ function App() {
                   >
                     <span className="icon icon--settings" />
                   </button>
-                  <button className="icon-button" aria-label="Full screen">
-                    <span className="icon icon--fullscreen" />
-                  </button>
+                  <div className="control-button">
+                    <button className="icon-button" aria-label="Full screen">
+                      <span className="icon icon--fullscreen" />
+                    </button>
+                    {hotkeyHintsVisible && (
+                      <span className="control-hotkey">T</span>
+                    )}
+                  </div>
                 </div>
               </div>
               {isSettingsOpen && (
