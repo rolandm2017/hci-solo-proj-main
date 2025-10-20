@@ -195,12 +195,13 @@
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 12px;
+  pointer-events: none;
 }
 
 .player-controls {
   position: absolute;
   inset: auto 0 0 0;
-  padding: 12px 16px;
+  padding: 12px 112px 16px 16px;
   display: grid;
   grid-template-columns: auto 1fr auto;
   gap: 16px;
@@ -218,6 +219,10 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.player-controls__end {
+  padding-right: 0;
 }
 
 .player-controls__center {
@@ -962,6 +967,7 @@
   .player-controls {
     grid-template-columns: 1fr;
     gap: 12px;
+    padding: 12px 16px 16px;
   }
 
   .player-controls__start,
