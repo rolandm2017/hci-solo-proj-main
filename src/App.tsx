@@ -108,6 +108,22 @@ const hotkeyCheatSheet: Array<{ key: string; action: string }> = [
   { key: 'Left/Right', action: 'Seek 5 seconds' },
 ]
 
+const VIDEO_DURATION_SECONDS = 24 * 60 + 16
+const INITIAL_PROGRESS_SECONDS = 12 * 60 + 43
+const VOLUME_STEP = 0.08
+const SEEK_STEP_SECONDS = 5
+const SEEK_STEP_RATIO = SEEK_STEP_SECONDS / VIDEO_DURATION_SECONDS
+
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, value))
+
+const formatTimestamp = (seconds: number) => {
+  const clamped = Math.max(0, Math.floor(seconds))
+  const minutes = Math.floor(clamped / 60)
+  const remainder = clamped % 60
+  return `${minutes}:${remainder.toString().padStart(2, '0')}`
+}
+
 function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [stableVolume, setStableVolume] = useState(true)
@@ -119,6 +135,18 @@ function App() {
   const [isHotkeyModalOpen, setIsHotkeyModalOpen] = useState(false)
   const [transientHotkeysVisible, setTransientHotkeysVisible] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [volumeLevel, setVolumeLevel] = useState(
+    clamp(0.68, 0, 1),
+  )
+  const [progressRatio, setProgressRatio] = useState(
+    clamp(INITIAL_PROGRESS_SECONDS / VIDEO_DURATION_SECONDS, 0, 1),
+  )
+
+  const currentTimeSeconds = progressRatio * VIDEO_DURATION_SECONDS
+  const timecodeDisplay = `${formatTimestamp(currentTimeSeconds)} / ${formatTimestamp(VIDEO_DURATION_SECONDS)}`
+  const volumePercent = Math.round(volumeLevel * 100)
+  const progressPercent = Math.max(0, Math.min(100, progressRatio * 100))
+  const bufferedPercent = Math.min(100, progressPercent + 20)
 
   const settingsMenuRef = useRef<HTMLDivElement | null>(null)
   const settingsButtonRef = useRef<HTMLButtonElement | null>(null)
@@ -197,13 +225,53 @@ function App() {
   }, [])
 
   useEffect(() => {
-    if (!hotkeyHintsVisible) {
-      return
-    }
-
     const handleKeyDown = (event: KeyboardEvent) => {
       const normalizedKey = event.key.toLowerCase()
       const normalizedCode = event.code.toLowerCase()
+
+      const isArrowUp =
+        normalizedKey === 'arrowup' || normalizedCode === 'arrowup'
+      if (isArrowUp) {
+        event.preventDefault()
+        setVolumeLevel((value) => clamp(value + VOLUME_STEP, 0, 1))
+        if (!alwaysShowHotkeys && hotkeyHintsVisible) {
+          hideHotkeyHints()
+        }
+        return
+      }
+
+      const isArrowDown =
+        normalizedKey === 'arrowdown' || normalizedCode === 'arrowdown'
+      if (isArrowDown) {
+        event.preventDefault()
+        setVolumeLevel((value) => clamp(value - VOLUME_STEP, 0, 1))
+        if (!alwaysShowHotkeys && hotkeyHintsVisible) {
+          hideHotkeyHints()
+        }
+        return
+      }
+
+      const isArrowLeft =
+        normalizedKey === 'arrowleft' || normalizedCode === 'arrowleft'
+      if (isArrowLeft) {
+        event.preventDefault()
+        setProgressRatio((value) => clamp(value - SEEK_STEP_RATIO, 0, 1))
+        if (!alwaysShowHotkeys) {
+          hideHotkeyHints()
+        }
+        return
+      }
+
+      const isArrowRight =
+        normalizedKey === 'arrowright' || normalizedCode === 'arrowright'
+      if (isArrowRight) {
+        event.preventDefault()
+        setProgressRatio((value) => clamp(value + SEEK_STEP_RATIO, 0, 1))
+        if (!alwaysShowHotkeys && hotkeyHintsVisible) {
+          hideHotkeyHints()
+        }
+        return
+      }
 
       const isSpace =
         normalizedKey === ' ' ||
@@ -214,7 +282,7 @@ function App() {
       if (isSpace) {
         event.preventDefault()
         handlePlayPause()
-        if (!alwaysShowHotkeys) {
+        if (!alwaysShowHotkeys && hotkeyHintsVisible) {
           hideHotkeyHints()
         }
         return
@@ -223,16 +291,12 @@ function App() {
       const isOtherHotkey =
         normalizedKey === 'c' ||
         normalizedKey === 't' ||
-        normalizedKey === 'arrowup' ||
-        normalizedKey === 'arrowdown' ||
         normalizedCode === 'keyc' ||
-        normalizedCode === 'keyt' ||
-        normalizedCode === 'arrowup' ||
-        normalizedCode === 'arrowdown'
+        normalizedCode === 'keyt'
 
       if (isOtherHotkey) {
         event.preventDefault()
-        if (!alwaysShowHotkeys) {
+        if (!alwaysShowHotkeys && hotkeyHintsVisible) {
           hideHotkeyHints()
         }
       }
@@ -240,7 +304,12 @@ function App() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [hotkeyHintsVisible, hideHotkeyHints, handlePlayPause, alwaysShowHotkeys])
+  }, [
+    hotkeyHintsVisible,
+    hideHotkeyHints,
+    handlePlayPause,
+    alwaysShowHotkeys,
+  ])
 
   return (
     <div className="app-shell">
@@ -322,15 +391,24 @@ function App() {
                       )}
                     </div>
                     <div className="volume-bar">
-                      <div className="volume-bar__value" style={{ width: '68%' }} />
+                      <div
+                        className="volume-bar__value"
+                        style={{ width: `${volumePercent}%` }}
+                      />
                     </div>
                   </div>
-                  <div className="timecode">12:43 / 24:16</div>
+                  <div className="timecode">{timecodeDisplay}</div>
                 </div>
                 <div className="player-controls__center">
                   <div className="progress-bar">
-                    <div className="progress-bar__buffer" />
-                    <div className="progress-bar__value" style={{ width: '53%' }} />
+                    <div
+                      className="progress-bar__buffer"
+                      style={{ width: `${bufferedPercent}%` }}
+                    />
+                    <div
+                      className="progress-bar__value"
+                      style={{ width: `${progressPercent}%` }}
+                    />
                   </div>
                 </div>
                 <div className="player-controls__end">
