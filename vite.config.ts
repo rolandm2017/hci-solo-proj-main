@@ -4,5 +4,5 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-   base: '/hci-4.2/',
+   base: '/hci-solo-4.3-branch/',
 })
