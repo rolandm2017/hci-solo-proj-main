@@ -519,16 +519,6 @@ function App() {
                       </button>
                     </li>
                     <li>
-                      <button className="menu-toggle" type="button">
-                        <span className="menu-toggle__label">Quality</span>
-                        <span className="menu-toggle__value">Auto (480p)</span>
-                      </button>
-                    </li>
-                  </ul>
-                  <div className="settings-menu__divider" />
-                  <div className="settings-menu__header">Hotkey experiments</div>
-                  <ul className="settings-menu__list">
-                    <li>
                       <button
                         className="menu-toggle"
                         type="button"
