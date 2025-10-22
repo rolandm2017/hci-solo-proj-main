@@ -532,44 +532,12 @@ function App() {
                       <button
                         className="menu-toggle"
                         type="button"
-                        onClick={() => {
-                          setAlwaysShowHotkeys((value) => !value)
-                          setTransientHotkeysVisible(false)
-                        }}
-                      >
-                        <span className="menu-toggle__label">
-                          Always show hotkeys
-                        </span>
-                        <span
-                          className={`switch ${
-                            alwaysShowHotkeys ? 'switch--on' : ''
-                          }`}
-                          aria-hidden="true"
-                        />
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        className="menu-toggle"
-                        type="button"
                         onClick={handleShowHotkeysBriefly}
                       >
                         <span className="menu-toggle__label">
                           Show hotkeys briefly
                         </span>
                         <span className="menu-toggle__value">Tap to preview</span>
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        className="menu-toggle"
-                        type="button"
-                        onClick={() => setIsHotkeyModalOpen(true)}
-                      >
-                        <span className="menu-toggle__label">
-                          Open hotkey manual
-                        </span>
-                        <span className="menu-toggle__value">View</span>
                       </button>
                     </li>
                   </ul>
